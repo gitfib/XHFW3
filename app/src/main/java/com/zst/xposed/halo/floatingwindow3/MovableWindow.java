@@ -407,8 +407,8 @@ public class MovableWindow
 	
 	private static void setCommonLayout(){
 		mWindowHolder.mWindow.addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
-        mWindowHolder.mWindow.setWindowAnimations(android.R.style.Animation_Dialog);
-        mWindowHolder.mWindow.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER);
+//        mWindowHolder.mWindow.setWindowAnimations(android.R.style.Animation_Dialog);
+//        mWindowHolder.mWindow.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER);
         switch(MainXposed.mPref.getInt(Common.KEY_KEYBOARD_MODE, Common.DEFAULT_KEYBOARD_MODE)){
             case 2:
                 mWindowHolder.mWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
