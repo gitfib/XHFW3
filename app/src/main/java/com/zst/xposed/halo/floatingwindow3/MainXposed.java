@@ -2,28 +2,34 @@ package com.zst.xposed.halo.floatingwindow3;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
+import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XSharedPreferences;
 import de.robv.android.xposed.XposedBridge;
+import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 import static de.robv.android.xposed.XposedHelpers.*;
+
+import android.content.Context;
+import android.content.pm.ProviderInfo;
 import android.content.res.*;
+import android.os.UserHandle;
+
+import com.crossbowffs.remotepreferences.RemotePreferences;
+
+import java.io.File;
 import java.util.*;
 
 public class MainXposed implements IXposedHookLoadPackage, IXposedHookZygoteInit {
 	
 	public static XModuleResources sModRes = null;
-	public static XSharedPreferences mPref;
-	public static XSharedPreferences mPackagesList;
+	public static RemotePreferences mPref;
+	public static RemotePreferences mPackagesList;
 	public static Compatibility.Hooks mCompatibility =  new Compatibility.Hooks();
 	
 
 	
 	@Override
 	public void initZygote(StartupParam startupParam) throws Throwable {
-		mPref = new XSharedPreferences(Common.THIS_MOD_PACKAGE_NAME, Common.PREFERENCE_MAIN_FILE);
-		mPref.makeWorldReadable();
-		mPackagesList = new XSharedPreferences(Common.THIS_MOD_PACKAGE_NAME, Common.PREFERENCE_PACKAGES_FILE);
-		mPackagesList.makeWorldReadable();
 		try{
 		//if(sModRes==null)
 		 	sModRes = XModuleResources.createInstance(startupParam.modulePath, null);
@@ -36,23 +42,19 @@ public class MainXposed implements IXposedHookLoadPackage, IXposedHookZygoteInit
 	
 	@Override
 	public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
-	if(mPref==null){
-		mPref = new XSharedPreferences(Common.THIS_MOD_PACKAGE_NAME, Common.PREFERENCE_MAIN_FILE);
-		mPref.makeWorldReadable();
-	}	
-	if(mPackagesList==null){
-		mPackagesList = new XSharedPreferences(Common.THIS_MOD_PACKAGE_NAME, Common.PREFERENCE_PACKAGES_FILE);
-		mPackagesList.makeWorldReadable();
-	}	
-//	else{
-//		mPref.reload();
-//		mPackagesList.reload();
-//		}
-	if(!mPref.getBoolean(Common.KEY_MOVABLE_WINDOW, Common.DEFAULT_MOVABLE_WINDOW)) return;
-	
 	if(lpparam.packageName==null) return;
 	XposedBridge.log("XHFW3 load package " + lpparam.packageName);
 	if(lpparam.packageName.equals("android")){
+		try{
+			Class<?> classActivityManagerService = findClass("com.android.server.am.ActivityManagerService", lpparam.classLoader);
+			if(classActivityManagerService!=null)
+				AndroidHooks.hookActivityManagerService(classActivityManagerService);
+		} catch(ClassNotFoundError e){
+			XposedBridge.log("Class com.android.server.am.ActivityManagerService not found in MainXposed");
+		}catch (Throwable e){
+			XposedBridge.log("hookActivityManagerService failed - Exception");
+			XposedBridge.log(e);
+		}
 		try {
 			Class<?> classActivityRecord = findClass("com.android.server.am.ActivityRecord", lpparam.classLoader);
 			if (classActivityRecord != null)
@@ -133,16 +135,24 @@ public class MainXposed implements IXposedHookLoadPackage, IXposedHookZygoteInit
 		} //elseif
 	}//handleLoadPackage
 
+	public static void preparePreferences(Context context) {
+		if(mPref==null)
+			mPref = new RemotePreferences(context, Common.PREFERENCE_AUTHORITY_NAME, Common.PREFERENCE_MAIN_FILE);
+		if(mPackagesList==null)
+			mPackagesList = new RemotePreferences(context, Common.PREFERENCE_AUTHORITY_NAME, Common.PREFERENCE_PACKAGES_FILE);
+	}
+
 	public static boolean isBlacklisted(String pkg) {
-		return Util.isFlag(mPackagesList.getInt(pkg, 0), Common.PACKAGE_BLACKLIST);
+		return 	!mPref.getBoolean(Common.KEY_MOVABLE_WINDOW, Common.DEFAULT_MOVABLE_WINDOW) ||
+				Util.isFlag(mPackagesList.getInt(pkg, 0), Common.PACKAGE_BLACKLIST);
 	}
 	
 	public static boolean isWhitelisted(String pkg) {
-		return Util.isFlag(mPackagesList.getInt(pkg, 0), Common.PACKAGE_WHITELIST);
+		return 	mPref.getBoolean(Common.KEY_MOVABLE_WINDOW, Common.DEFAULT_MOVABLE_WINDOW) &&
+				Util.isFlag(mPackagesList.getInt(pkg, 0), Common.PACKAGE_WHITELIST);
 	}
 	
 	public static int getBlackWhiteListOption() {
-		mPref.reload();
 		return Integer.parseInt(mPref.getString(Common.KEY_WHITEBLACKLIST_OPTIONS, Common.DEFAULT_WHITEBLACKLIST_OPTIONS));
 	}
 	

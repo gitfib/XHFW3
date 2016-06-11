@@ -92,7 +92,8 @@ public class MovableWindow
 				
                 DEBUG("onCreate start ");
                 mCurrentActivity = (Activity) param.thisObject;
-				isMovable = /* isMovable || */
+				MainXposed.preparePreferences(mCurrentActivity);
+						isMovable = /* isMovable || */
 					   (Util.isFlag(mCurrentActivity.getIntent().getFlags(), MainXposed.mPref.getInt(Common.KEY_FLOATING_FLAG, Common.FLAG_FLOATING_WINDOW)));
 				if(!mRestartReceiverRegistered)
 					mRestartReceiverRegistered = registerRestartBroadcastReceiver(mCurrentActivity);

@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import android.os.*;
 import android.content.*;
 
+import com.crossbowffs.remotepreferences.RemotePreferences;
+
 public class WindowHolder{
     public boolean isSnapped = false;
     public boolean isMaximized = false;
@@ -35,9 +37,8 @@ public class WindowHolder{
     //public boolean isSet=false;
     //public boolean mReceiverRegistered = false;
 
-    public WindowHolder(Activity sActivity, XSharedPreferences mPref){
+    public WindowHolder(Activity sActivity, RemotePreferences mPref){
         mActivity = sActivity;
-        mPref.reload();
         alpha = mPref.getFloat(Common.KEY_ALPHA, Common.DEFAULT_ALPHA);
         dim = mPref.getFloat(Common.KEY_DIM, Common.DEFAULT_DIM);
         cachedOrientation=Util.getScreenOrientation(mActivity.getApplicationContext());

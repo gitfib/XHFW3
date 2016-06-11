@@ -51,6 +51,7 @@ public class SystemUIOutliner {
 			protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 				Service thiz = (Service) param.thisObject;
 				mContext = thiz.getApplicationContext();
+				MainXposed.preparePreferences(mContext);
 				mContext.registerReceiver(mIntentReceiver, new IntentFilter(Common.SHOW_OUTLINE));
 			}
 		});

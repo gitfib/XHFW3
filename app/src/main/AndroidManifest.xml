@@ -94,6 +94,10 @@
 				<action android:name="service.XHFWService" />
 			</intent-filter>
 		</service>
+		<provider
+			android:authorities="com.zst.xposed.halo.floatingwindow3.preferences"
+			android:name=".PreferencesProvider"
+			android:exported="true" />
     </application>
 
 </manifest>

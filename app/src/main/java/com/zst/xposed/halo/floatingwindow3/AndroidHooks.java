@@ -6,6 +6,7 @@ import android.content.pm.*;
 import java.util.*;
 import android.os.*;
 import android.app.*;
+import android.util.Log;
 import android.view.*;
 
 import static de.robv.android.xposed.XposedHelpers.findClass;
@@ -18,13 +19,15 @@ public class AndroidHooks
 
 	/*****HOOKS******/
 
-	public static void hookActivityRecord(Class<?> classActivityRecord) throws Throwable {
+	public static void hookActivityRecord(final Class<?> classActivityRecord) throws Throwable {
 
 		XposedBridge.hookAllConstructors(classActivityRecord, 
 			new XC_MethodHook(XCallback.PRIORITY_HIGHEST) {
 				@Override
 				protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 					boolean isMovable = false;
+					if (MainXposed.mPref == null)
+						return;
 					String packageName = Util.getFailsafeStringFromObject(null, param.thisObject, "packageName");
 					if(packageName==null)
 						return;
@@ -79,6 +82,8 @@ public class AndroidHooks
 		XposedBridge.hookAllMethods(classActivityRecord, "takeFromHistory", new XC_MethodHook() {
 				protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 					MovableWindow.DEBUG("takeFromHistory");
+					if (MainXposed.mPref == null)
+						return;
 					Intent mIntent = (Intent) Util.getFailsafeObjectFromObject(param.thisObject, "intent");
 					if(mIntent == null)
 						return;
@@ -109,6 +114,8 @@ public class AndroidHooks
 				@Override
 				protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 					MovableWindow.DEBUG("TaskRecord start");
+					if (MainXposed.mPref == null)
+						return;
 					String packageName = Util.getFailsafeStringFromObject(null, param.thisObject, "affinity");
 					if(packageName == null)
 						return;
@@ -193,6 +200,20 @@ public class AndroidHooks
 //					}
 //			});
 //	}
+
+	public static void hookActivityManagerService(Class<?> classActivityManagerService) throws Throwable {
+		XposedBridge.hookAllMethods(classActivityManagerService, "finishBooting",
+				new XC_MethodHook() {
+					@Override
+					protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+						Context mContext = ((Context) Util.getFailsafeObjectFromObject(param.thisObject, "mContext"));
+						if (mContext == null)
+							return;
+						// TODO: Below auto-reboots shortly after it works! Could be the same when doing it in scanPackageLI: /mnt/expand/..
+//						MainXposed.preparePreferences(mContext);
+					}
+				});
+	}
 
 
 	/*****HELPERS*****/
@@ -312,7 +333,6 @@ public class AndroidHooks
 	}
 
 	private static boolean checkBlackWhiteList(boolean flag, String packageName){
-		MainXposed.mPackagesList.reload();
 		switch (MainXposed.getBlackWhiteListOption()) {
 			case 1: /* Always open apps in halo except blacklisted apps */
 				flag=!MainXposed.isBlacklisted(packageName);
@@ -417,6 +437,8 @@ public class AndroidHooks
 		XposedBridge.hookAllMethods(hookClass, "startActivityLocked", new XC_MethodHook() {
 				protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 					MovableWindow.DEBUG("startActivityLocked");
+					if (MainXposed.mPref == null)
+						return;
 //					if(!isMovable)
 //						throw new Exception("test");
 					Object activityRecord = param.args[0];
